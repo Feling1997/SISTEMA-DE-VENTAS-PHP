@@ -1,0 +1,140 @@
+<?php
+
+require_once __DIR__ . "/../../configuraciones/base_datos.php";
+require_once __DIR__ . "/../../configuraciones/ayudas.php";
+
+class Cliente {
+
+    public static function listar_todos(): array {
+        $lista = [];
+        $pdo = obtener_pdo();
+
+        if ($pdo !== null) {
+            try {
+                $sql = "SELECT id, nombre, dni, telefono, direccion, creado_en FROM clientes ORDER BY id DESC";
+                $st = $pdo->prepare($sql);
+                $st->execute();
+                $rows = $st->fetchAll();
+                if (is_array($rows))
+                    $lista = $rows;
+            } catch (Throwable $e) {
+                registrar_log("Cliente::listar_todos", $e->getMessage());
+            }
+        }
+
+        return $lista;
+    }
+
+    public static function buscar_por_id(int $id): ?array {
+        $fila = null;
+        $pdo = obtener_pdo();
+
+        if ($pdo !== null) {
+            try {
+                $sql = "SELECT id, nombre, dni, telefono, direccion, creado_en
+                        FROM clientes
+                        WHERE id = ?
+                        LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $st->execute([$id]);
+                $r = $st->fetch();
+                if ($r)
+                    $fila = $r;
+            } catch (Throwable $e) {
+                registrar_log("Cliente::buscar_por_id", $e->getMessage());
+            }
+        }
+
+        return $fila;
+    }
+
+
+    public static function dni_existe(string $dni, int $excepto_id = 0): bool {
+        $existe = false;
+        $pdo = obtener_pdo();
+        $dni_limpio = trim($dni);
+        if ($pdo !== null && $dni_limpio !== "") {
+            try {
+                $sql = "SELECT id FROM clientes WHERE dni = ? AND id <> ? LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $st->execute([$dni_limpio, $excepto_id]);
+                $r = $st->fetch();
+                if ($r)
+                    $existe = true;
+            } catch (Throwable $e) {
+                registrar_log("Cliente::dni_existe", $e->getMessage());
+            }
+        }
+        return $existe;
+    }
+
+    public static function crear(string $nombre, ?string $dni, ?string $telefono, ?string $direccion): bool {
+        $ok = false;
+        $pdo = obtener_pdo();
+
+        if ($pdo !== null) {
+            try {
+                $sql = "INSERT INTO clientes (nombre, dni, telefono, direccion) VALUES (?, ?, ?, ?)";
+                $st = $pdo->prepare($sql);
+                $ok = $st->execute([$nombre, $dni, $telefono, $direccion]);
+            } catch (Throwable $e) {
+                $ok = false;
+                registrar_log("Cliente::crear", $e->getMessage());
+            }
+        }
+        return $ok;
+    }
+
+    public static function actualizar(int $id, string $nombre, ?string $dni, ?string $telefono, ?string $direccion): bool {
+        $ok = false;
+        $pdo = obtener_pdo();
+        if ($pdo !== null) {
+            try {
+                $sql = "UPDATE clientes SET nombre = ?, dni = ?, telefono = ?, direccion = ? WHERE id = ?";
+                $st = $pdo->prepare($sql);
+                $ok = $st->execute([$nombre, $dni, $telefono, $direccion, $id]);
+            } catch (Throwable $e) {
+                $ok = false;
+                registrar_log("Cliente::actualizar", $e->getMessage());
+            }
+        }
+        return $ok;
+    }
+
+
+    public static function esta_relacionado_con_ventas(int $id_cliente): bool {
+        $rel = false;
+        $pdo = obtener_pdo();
+
+        if ($pdo !== null) {
+            try {
+                $sql = "SELECT id FROM ventas WHERE id_cliente = ? LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $st->execute([$id_cliente]);
+                $r = $st->fetch();
+                if ($r)
+                    $rel = true;
+            } catch (Throwable $e) {
+                registrar_log("Cliente::esta_relacionado_con_ventas", $e->getMessage());
+            }
+        }
+        return $rel;
+    }
+
+    public static function eliminar(int $id): bool {
+        $ok = false;
+        $pdo = obtener_pdo();
+
+        if ($pdo !== null) {
+            try {
+                $sql = "DELETE FROM clientes WHERE id = ?";
+                $st = $pdo->prepare($sql);
+                $ok = $st->execute([$id]);
+            } catch (Throwable $e) {
+                $ok = false;
+                registrar_log("Cliente::eliminar", $e->getMessage());
+            }
+        }
+        return $ok;
+    }
+}

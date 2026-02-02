@@ -1,0 +1,204 @@
+<?php
+require_once __DIR__ . "/../../configuraciones/base_datos.php";
+require_once __DIR__ . "/../../configuraciones/ayudas.php";
+class Venta {
+    public static function listar_ventas(): array {
+        $lista = [];
+        $pdo = obtener_pdo();
+        if ($pdo !== null) {
+            try {
+                $sql = "SELECT v.id, v.fecha, v.total, c.nombre AS cliente_nombre, u.usuario AS usuario_nombre FROM ventas v INNER JOIN clientes c ON c.id = v.id_cliente INNER JOIN usuarios u ON u.id = v.id_usuario ORDER BY v.id DESC";
+                $st = $pdo->prepare($sql);
+                $st->execute();
+                $rows = $st->fetchAll();
+                if (is_array($rows))
+                    $lista = $rows;
+            } catch (Throwable $e) {
+                registrar_log("Venta::listar_ventas", $e->getMessage());
+            }
+        }
+        return $lista;
+    }
+
+    public static function obtener_detalle(int $id_venta): array {
+        $items = [];
+        $pdo = obtener_pdo();
+        if ($pdo !== null) {
+            try {
+                $sql = "SELECT d.id, d.id_producto, p.nombre AS producto_nombre, d.cantidad, d.precio_unit, d.descuento, d.subtotal FROM detalle_venta d INNER JOIN productos p ON p.id = d.id_producto WHERE d.id_venta = ? ORDER BY d.id ASC";
+                $st = $pdo->prepare($sql);
+                $st->execute([$id_venta]);
+                $rows = $st->fetchAll();
+                if (is_array($rows))
+                    $items = $rows;
+            } catch (Throwable $e) {
+                registrar_log("Venta::obtener_detalle", $e->getMessage());
+            }
+        }
+        return $items;
+    }
+
+    public static function obtener_producto_para_venta(int $id_producto): ?array {
+        $fila = null;
+        $pdo = obtener_pdo();
+        if ($pdo !== null) {
+            try {
+                $sql = "SELECT id, nombre, precio_final, id_stock, id_asociado, factor_conversion, activo FROM productos WHERE id = ? LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $st->execute([$id_producto]);
+                $r = $st->fetch();
+                if ($r)
+                    $fila = $r;
+            } catch (Throwable $e) {
+                registrar_log("Venta::obtener_producto_para_venta", $e->getMessage());
+            }
+        }
+        return $fila;
+    }
+
+    public static function obtener_id_stock_consumo(array $producto): ?int {
+        $id = null;
+        $id_stock = $producto["id_stock"] ?? null;
+        $id_asociado = $producto["id_asociado"] ?? null;
+        if ($id_stock !== null) {
+            $id_stock = (int)$id_stock;
+            if ($id_stock > 0)
+                $id = $id_stock;
+        }
+        if ($id === null && $id_asociado !== null) {
+            $id_asociado = (int)$id_asociado;
+            if ($id_asociado > 0)
+                $id = $id_asociado;
+        }
+        return $id;
+    }
+
+    public static function obtener_stock_por_id(int $id_stock): ?array {
+        $fila = null;
+        $pdo = obtener_pdo();
+        if ($pdo !== null) {
+            try {
+                $sql = "SELECT id, nombre, unidad, cantidad, precio_costo, activo FROM stock WHERE id = ? LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $st->execute([$id_stock]);
+                $r = $st->fetch();
+                if ($r)
+                    $fila = $r;
+            } catch (Throwable $e) {
+                registrar_log("Venta::obtener_stock_por_id", $e->getMessage());
+            }
+        }
+        return $fila;
+    }
+
+    public static function calcular_consumo_stock(float $cantidad_producto, float $factor_conversion): float {
+        $consumo = 0.0;
+        if ($cantidad_producto < 0) {
+            $cantidad_producto = 0;
+        }
+        if ($factor_conversion < 0)
+            $factor_conversion = 0;
+        $consumo = $cantidad_producto * $factor_conversion;
+        return $consumo;
+    }
+
+
+    public static function calcular_subtotal(float $cantidad, float $precio_unit, float $descuento): float {
+        $sub = 0.0;
+        if ($cantidad < 0) { $cantidad = 0; }
+        if ($precio_unit < 0) { $precio_unit = 0; }
+        if ($descuento < 0) { $descuento = 0; }
+        $sub = ($cantidad * $precio_unit) - $descuento;
+        if ($sub < 0) { $sub = 0; }
+        return $sub;
+    }
+
+    public static function confirmar_venta(int $id_cliente, int $id_usuario, array $carrito): array {
+        $res = ["ok" => false, "id_venta" => 0, "error" => ""];
+        $pdo = obtener_pdo();
+        if ($pdo === null)
+            $res["error"] = "Sin conexión a base de datos.";
+        else {
+            try {
+                $pdo->beginTransaction();
+                if (!is_array($carrito) || count($carrito) === 0)
+                    $res["error"] = "El carrito está vacío.";
+                else {
+                    if ($id_cliente <= 0) { $id_cliente = 1; }
+                    if ($id_usuario <= 0) { $id_usuario = 0; }
+                    $total = 0.0;
+                    foreach ($carrito as $it) {
+                        $cantidad = (float)($it["cantidad"] ?? 0);
+                        $precio_unit = (float)($it["precio_unit"] ?? 0);
+                        $descuento = (float)($it["descuento"] ?? 0);
+                        $sub = self::calcular_subtotal($cantidad, $precio_unit, $descuento);
+                        $total += $sub;
+                    }
+                    $sqlV = "INSERT INTO ventas (id_cliente, id_usuario, total) VALUES (?, ?, ?)";
+                    $stV = $pdo->prepare($sqlV);
+                    $okV = $stV->execute([$id_cliente, $id_usuario, $total]);
+                    if (!$okV)
+                        $res["error"] = "No se pudo crear la venta.";
+                    else {
+                        $id_venta = (int)$pdo->lastInsertId();
+                        foreach ($carrito as $it) {
+                            $id_producto = (int)($it["id_producto"] ?? 0);
+                            $cantidad = (float)($it["cantidad"] ?? 0);
+                            $precio_unit = (float)($it["precio_unit"] ?? 0);
+                            $descuento = (float)($it["descuento"] ?? 0);
+                            if ($id_producto <= 0 || $cantidad <= 0)
+                                throw new Exception("Item inválido en carrito.");
+                            $prod = null;
+                            $sqlP = "SELECT id, nombre, precio_final, id_stock, id_asociado, factor_conversion, activo FROM productos WHERE id = ? LIMIT 1";
+                            $stP = $pdo->prepare($sqlP);
+                            $stP->execute([$id_producto]);
+                            $prod = $stP->fetch();
+                            if (!$prod || (int)$prod["activo"] !== 1)
+                                throw new Exception("Producto no disponible.");
+                            $id_stock_consumo = self::obtener_id_stock_consumo($prod);
+                            $factor = (float)$prod["factor_conversion"];
+                            if ($factor < 0) { $factor = 0; }
+                            if ($id_stock_consumo !== null) {
+                                $sqlS = "SELECT id, cantidad FROM stock WHERE id = ? LIMIT 1";
+                                $stS = $pdo->prepare($sqlS);
+                                $stS->execute([$id_stock_consumo]);
+                                $stock = $stS->fetch();
+                                if (!$stock)
+                                    throw new Exception("Stock no encontrado para el producto.");
+                                $cantidad_stock_actual = (float)$stock["cantidad"];
+                                $consumo = self::calcular_consumo_stock($cantidad, $factor);
+                                if ($consumo > $cantidad_stock_actual + 0.0000001)
+                                    throw new Exception("Stock insuficiente para el producto ID $id_producto.");
+                                $sqlDesc = "UPDATE stock SET cantidad = cantidad - ? WHERE id = ?";
+                                $stD = $pdo->prepare($sqlDesc);
+                                $okD = $stD->execute([$consumo, $id_stock_consumo]);
+                                if (!$okD)
+                                    throw new Exception("No se pudo descontar stock.");
+                            }
+                            $subtotal = self::calcular_subtotal($cantidad, $precio_unit, $descuento);
+                            $sqlDet = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unit, descuento, subtotal) VALUES (?, ?, ?, ?, ?, ?)";
+                            $stDet = $pdo->prepare($sqlDet);
+                            $okDet = $stDet->execute([$id_venta, $id_producto, $cantidad, $precio_unit, $descuento, $subtotal]);
+                            if (!$okDet)
+                                throw new Exception("No se pudo insertar detalle.");
+                        }
+                        $pdo->commit();
+                        $res["ok"] = true;
+                        $res["id_venta"] = $id_venta;
+                    }
+                }
+                if ($res["ok"] === false) {
+                    if ($pdo->inTransaction())
+                        $pdo->rollBack();
+                }
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction())
+                    $pdo->rollBack();
+                $res["ok"] = false;
+                $res["error"] = "Error al confirmar venta: " . $e->getMessage();
+                registrar_log("Venta::confirmar_venta", $e->getMessage());
+            }
+        }
+        return $res;
+    }
+}
