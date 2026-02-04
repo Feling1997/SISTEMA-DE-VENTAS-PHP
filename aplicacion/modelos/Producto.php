@@ -8,7 +8,7 @@ class Producto {
         $pdo = obtener_pdo();
         if ($pdo !== null) {
             try {
-                $sql = "SELECT p.id, p.nombre, p.cod_barras, p.id_stock, p.id_asociado, p.factor_conversion, p.ganancia, p.precio_final, p.activo, p.creado_en, s.nombre AS stock_nombre, a.nombre AS asociado_nombre FROM productos p LEFT JOIN stock s ON s.id = p.id_stock LEFT JOIN stock a ON a.id = p.id_asociado ORDER BY p.id DESC";
+                $sql = "SELECT p.id, p.nombre, p.cod_barras, p.id_stock, p.factor_conversion, p.ganancia, p.precio_final, p.activo, p.creado_en, s.nombre AS stock_nombre FROM productos p INNER JOIN stock s ON s.id = p.id_stock ORDER BY p.id DESC";
                 $st = $pdo->prepare($sql);
                 $st->execute();
                 $rows = $st->fetchAll();
@@ -26,7 +26,7 @@ class Producto {
         $pdo = obtener_pdo();
         if ($pdo !== null) {
             try {
-                $sql = "SELECT id, nombre, cod_barras, id_stock, id_asociado, factor_conversion, ganancia, precio_final, activo, creado_en FROM productos WHERE id = ? LIMIT 1";
+                $sql = "SELECT id, nombre, cod_barras, id_stock, factor_conversion, ganancia, precio_final, activo, creado_en FROM productos WHERE id = ? LIMIT 1";
                 $st = $pdo->prepare($sql);
                 $st->execute([$id]);
                 $r = $st->fetch();
@@ -58,10 +58,10 @@ class Producto {
         return $existe;
     }
 
-    public static function obtener_precio_costo_stock(?int $id_stock): ?float {
+    public static function obtener_precio_costo_stock(int $id_stock): ?float {
         $precio = null;
         $pdo = obtener_pdo();
-        if ($pdo !== null && $id_stock !== null && $id_stock > 0) {
+        if ($pdo !== null && $id_stock > 0) {
             try {
                 $sql = "SELECT precio_costo FROM stock WHERE id = ? LIMIT 1";
                 $st = $pdo->prepare($sql);
@@ -76,29 +76,25 @@ class Producto {
         return $precio;
     }
 
-    public static function stock_existe_o_es_nulo(?int $id_stock): bool {
-        $ok = true;
+    public static function stock_existe(int $id_stock): bool {
+        $ok = false;
         $pdo = obtener_pdo();
-        if ($id_stock !== null && $id_stock > 0) {
-            $ok = false;
-            if ($pdo !== null) {
-                try {
-                    $sql = "SELECT id FROM stock WHERE id = ? LIMIT 1";
-                    $st = $pdo->prepare($sql);
-                    $st->execute([$id_stock]);
-                    $r = $st->fetch();
-                    if ($r)
-                        $ok = true;
-                } catch (Throwable $e) {
-                    $ok = false;
-                    registrar_log("Producto::stock_existe_o_es_nulo", $e->getMessage());
-                }
-            } else {
+        if ($pdo !== null && $id_stock > 0) {
+            try {
+                $sql = "SELECT id FROM stock WHERE id = ? LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $st->execute([$id_stock]);
+                $r = $st->fetch();
+                if ($r)
+                    $ok = true;
+            } catch (Throwable $e) {
                 $ok = false;
+                registrar_log("Producto::stock_existe", $e->getMessage());
             }
         }
         return $ok;
     }
+
 
     public static function calcular_precio_final(float $precio_costo, float $factor_conversion, float $ganancia): float {
         $precio = 0.0;
@@ -110,14 +106,14 @@ class Producto {
         return $precio;
     }
 
-    public static function crear(string $nombre, string $cod_barras, ?int $id_stock, ?int $id_asociado, float $factor_conversion, float $ganancia, float $precio_final, int $activo): bool {
+    public static function crear(string $nombre, string $cod_barras, int $id_stock, float $factor_conversion, float $ganancia, float $precio_final, int $activo): bool {
         $ok = false;
         $pdo = obtener_pdo();
         if ($pdo !== null) {
             try {
-                $sql = "INSERT INTO productos (nombre, cod_barras, id_stock, id_asociado, factor_conversion, ganancia, precio_final, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                $sql = "INSERT INTO productos (nombre, cod_barras, id_stock, id_asociado, factor_conversion, ganancia, precio_final, activo) VALUES (?, ?, ?, NULL, ?, ?, ?, ?)";
                 $st = $pdo->prepare($sql);
-                $ok = $st->execute([$nombre, $cod_barras, $id_stock, $id_asociado, $factor_conversion, $ganancia, $precio_final, $activo]);
+                $ok = $st->execute([$nombre, $cod_barras, $id_stock, $factor_conversion, $ganancia, $precio_final, $activo]);
             } catch (Throwable $e) {
                 $ok = false;
                 registrar_log("Producto::crear", $e->getMessage());
@@ -126,14 +122,18 @@ class Producto {
         return $ok;
     }
 
-    public static function actualizar(int $id, string $nombre, string $cod_barras, ?int $id_stock, ?int $id_asociado, float $factor_conversion, float $ganancia, float $precio_final, int $activo): bool {
+
+    public static function actualizar(int $id, string $nombre, string $cod_barras, int $id_stock, float $factor_conversion, float $ganancia, float $precio_final, int $activo): bool {
         $ok = false;
         $pdo = obtener_pdo();
         if ($pdo !== null) {
             try {
-                $sql = "UPDATE productos SET nombre = ?, cod_barras = ?, id_stock = ?, id_asociado = ?, factor_conversion = ?, ganancia = ?, precio_final = ?, activo = ? WHERE id = ?";
+                $sql = "UPDATE productos
+                        SET nombre = ?, cod_barras = ?, id_stock = ?, id_asociado = NULL,
+                            factor_conversion = ?, ganancia = ?, precio_final = ?, activo = ?
+                        WHERE id = ?";
                 $st = $pdo->prepare($sql);
-                $ok = $st->execute([$nombre, $cod_barras, $id_stock, $id_asociado, $factor_conversion, $ganancia, $precio_final, $activo, $id]);
+                $ok = $st->execute([$nombre, $cod_barras, $id_stock, $factor_conversion, $ganancia, $precio_final, $activo, $id]);
             } catch (Throwable $e) {
                 $ok = false;
                 registrar_log("Producto::actualizar", $e->getMessage());
@@ -141,6 +141,7 @@ class Producto {
         }
         return $ok;
     }
+
 
     public static function esta_en_detalle_venta(int $id_producto): bool {
         $rel = false;

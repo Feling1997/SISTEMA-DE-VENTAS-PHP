@@ -1,6 +1,7 @@
 <?php
-
 require_once __DIR__ . "/../modelos/Stock.php";
+require_once __DIR__ . "/../modelos/Producto.php";
+require_once __DIR__ . "/../../configuraciones/base_datos.php";
 require_once __DIR__ . "/../../configuraciones/seguridad.php";
 require_once __DIR__ . "/../../configuraciones/ayudas.php";
 require_once __DIR__ . "/../../configuraciones/csrf.php";
@@ -148,6 +149,43 @@ class ControladorStock {
             }
         }
     }
+
+    public function productos(): void {
+        if ($this->permiso()) {
+            $id = (int)obtener_get("id", 0);
+            $s = Stock::buscar_por_id($id);
+            if ($s === null) {
+                flash_error("Stock no encontrado.");
+                redirigir("index.php?c=stock&a=index");
+            } else {
+                $items = Stock::listar_todos();
+                $productos = $this->listar_productos_por_stock($id);
+                include __DIR__ . "/../vistas/parciales/encabezado.php";
+                include __DIR__ . "/../vistas/stock/index.php";
+                include __DIR__ . "/../vistas/parciales/pie.php";
+            }
+        }
+    }
+
+    private function listar_productos_por_stock(int $id_stock): array {
+        $lista = [];
+        $pdo = obtener_pdo();
+        if ($pdo !== null && $id_stock > 0) {
+            try {
+                $sql = "SELECT id, nombre, cod_barras, id_stock, factor_conversion, ganancia, precio_final, activo, creado_en FROM productos WHERE id_stock = ? ORDER BY nombre ASC";
+                $st = $pdo->prepare($sql);
+                $st->execute([$id_stock]);
+                $rows = $st->fetchAll();
+                if (is_array($rows))
+                    $lista = $rows;
+            } catch (Throwable $e) {
+                registrar_log("ControladorStock::listar_productos_por_stock", $e->getMessage());
+            }
+        }
+        return $lista;
+    }
+
+
 
     public function eliminar(): void {
         if ($this->permiso()) {

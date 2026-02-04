@@ -14,7 +14,6 @@
             <th>Nombre</th>
             <th>Código barras</th>
             <th>Stock</th>
-            <th>Asociado</th>
             <th>Factor</th>
             <th>Ganancia %</th>
             <th>Precio final</th>
@@ -29,7 +28,6 @@
             <td><?= htmlspecialchars($p["nombre"] ?? "") ?></td>
             <td><?= htmlspecialchars($p["cod_barras"] ?? "") ?></td>
             <td><?= htmlspecialchars($p["stock_nombre"] ?? "") ?></td>
-            <td><?= htmlspecialchars($p["asociado_nombre"] ?? "") ?></td>
             <td><?= htmlspecialchars($p["factor_conversion"] ?? "") ?></td>
             <td><?= htmlspecialchars($p["ganancia"] ?? "") ?></td>
             <td><?= htmlspecialchars($p["precio_final"] ?? "") ?></td>
@@ -45,7 +43,7 @@
           </tr>
         <?php endforeach; ?>
         <?php if (count($productos) === 0): ?>
-          <tr><td colspan="10" class="text-center text-muted">Sin productos.</td></tr>
+          <tr><td colspan="9" class="text-center text-muted">Sin productos.</td></tr>
         <?php endif; ?>
         </tbody>
       </table>

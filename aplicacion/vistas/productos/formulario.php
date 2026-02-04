@@ -13,13 +13,19 @@ $id = (int)($p["id"] ?? 0);
 $nombre = (string)($p["nombre"] ?? "");
 $cod_barras = (string)($p["cod_barras"] ?? "");
 $id_stock = $p["id_stock"] ?? null;
-$id_asociado = $p["id_asociado"] ?? null;
+if ($id_stock !== null) { $id_stock = (int)$id_stock; }
+//si venimos desde stock, el stock es fijo
+$stock_fijo = false;
+$id_stock_get = (int)($_GET["id_stock"] ?? 0);
+if ($id_stock_get > 0) {
+    $stock_fijo = true;
+    $id_stock = $id_stock_get;
+}
+
 $factor_conversion = (string)($p["factor_conversion"] ?? "1");
 $ganancia = (string)($p["ganancia"] ?? "0");
 $precio_final = (string)($p["precio_final"] ?? "0");
 $activo = (int)($p["activo"] ?? 1);
-if ($id_stock !== null) { $id_stock = (int)$id_stock; }
-if ($id_asociado !== null) { $id_asociado = (int)$id_asociado; }
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h3 class="mb-0"><?= htmlspecialchars($titulo) ?></h3>
@@ -34,37 +40,29 @@ if ($id_asociado !== null) { $id_asociado = (int)$id_asociado; }
       <?php endif; ?>
       <div class="mb-3">
         <label class="form-label">Nombre *</label>
-        <input class="form-control" name="nombre" value="<?= htmlspecialchars($nombre) ?>" placeholder="Ingresar nombre">
+        <input class="form-control" name="nombre" value="<?= htmlspecialchars($nombre) ?>" placeholder="Ingresar nombre" required>
       </div>
       <div class="mb-3">
         <label class="form-label">Código de barras *</label>
-        <input class="form-control" name="cod_barras" value="<?= htmlspecialchars($cod_barras) ?>" placeholder="Ingresar código de barras">
+        <input class="form-control" name="cod_barras" value="<?= htmlspecialchars($cod_barras) ?>" placeholder="Ingresar código de barras" required>
       </div>
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Stock principal (opcional)</label>
-          <select class="form-select" name="id_stock">
-            <option value="">— Sin stock principal —</option>
-            <?php foreach ($stocks as $s): ?>
-              <?php $sid = (int)$s["id"]; ?>
-              <option value="<?= $sid ?>" <?= ($id_stock !== null && $id_stock === $sid) ? "selected" : "" ?>>
-                #<?= $sid ?> - <?= htmlspecialchars($s["nombre"]) ?> (<?= htmlspecialchars($s["unidad"]) ?>) costo: <?= htmlspecialchars($s["precio_costo"]) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Stock asociado (opcional)</label>
-          <select class="form-select" name="id_asociado">
-            <option value="">— Sin stock asociado —</option>
-            <?php foreach ($stocks as $s): ?>
-              <?php $sid = (int)$s["id"]; ?>
-              <option value="<?= $sid ?>" <?= ($id_asociado !== null && $id_asociado === $sid) ? "selected" : "" ?>>
-                #<?= $sid ?> - <?= htmlspecialchars($s["nombre"]) ?> (<?= htmlspecialchars($s["unidad"]) ?>) costo: <?= htmlspecialchars($s["precio_costo"]) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
+      <div class="mb-3">
+        <label class="form-label">Stock principal *</label>
+        <select class="form-select" name="id_stock" required <?= $stock_fijo ? "disabled" : "" ?>>
+          <option value="" selected disabled>— Seleccioná un stock —</option>
+          <?php foreach ($stocks as $s): ?>
+            <?php $sid = (int)$s["id"]; ?>
+            <option value="<?= $sid ?>" <?= ($id_stock !== null && $id_stock === $sid) ? "selected" : "" ?>>
+              #<?= $sid ?> - <?= htmlspecialchars($s["nombre"]) ?> (<?= htmlspecialchars($s["unidad"]) ?>) costo: <?= htmlspecialchars($s["precio_costo"]) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <?php if ($stock_fijo): ?>
+          <input type="hidden" name="id_stock" value="<?= (int)$id_stock ?>">
+          <div class="form-text">Stock preseleccionado desde Stock. No se puede cambiar en esta pantalla.</div>
+        <?php else: ?>
+          <div class="form-text">El producto siempre debe estar asociado a un stock principal.</div>
+        <?php endif; ?>
       </div>
       <div class="row">
         <div class="col-md-4 mb-3">

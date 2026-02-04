@@ -51,7 +51,13 @@ class ControladorProductos {
     public function nuevo(): void {
         if ($this->permiso()) {
             $modo = "crear";
-            $p = ["id" => 0, "nombre" => "", "cod_barras" => "", "id_stock" => null, "id_asociado" => null, "factor_conversion" => 1, "ganancia" => 0, "precio_final" => 0, "activo" => 1];
+            $id_stock_pre = (int)obtener_get("id_stock", 0);
+            if ($id_stock_pre <= 0)
+                $id_stock_pre = 0;
+            $nombre_stock_pre = trim((string)obtener_get("nombre_stock", ""));
+            if (texto_invalido($nombre_stock_pre))
+                $nombre_stock_pre = "";
+            $p = ["id" => 0, "nombre" => ($nombre_stock_pre !== "" ? $nombre_stock_pre : ""), "cod_barras" => "", "id_stock" => ($id_stock_pre > 0 ? $id_stock_pre : null), "id_asociado" => null, "factor_conversion" => 1, "ganancia" => 0, "precio_final" => 0, "activo" => 1];
             $stocks = $this->listar_stock_para_select();
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/productos/formulario.php";
@@ -70,7 +76,6 @@ class ControladorProductos {
                     $nombre = trim((string)obtener_post("nombre", ""));
                     $cod_barras = trim((string)obtener_post("cod_barras", ""));
                     $id_stock_raw = trim((string)obtener_post("id_stock", ""));
-                    $id_asociado_raw = trim((string)obtener_post("id_asociado", ""));
                     $factor_conversion = (float)obtener_post("factor_conversion", 1);
                     $ganancia = (float)obtener_post("ganancia", 0);
                     $activo = (int)obtener_post("activo", 1);
@@ -80,37 +85,25 @@ class ControladorProductos {
                         if (Producto::cod_barras_existe($cod_barras, 0))
                             $error = "El código de barras ya existe.";
                         else {
-                            $id_stock = null;
-                            $id_asociado = null;
+                            $id_stock = 0;
                             if ($id_stock_raw !== "" && ctype_digit($id_stock_raw))
                                 $id_stock = (int)$id_stock_raw;
-                            if ($id_asociado_raw !== "" && ctype_digit($id_asociado_raw))
-                                $id_asociado = (int)$id_asociado_raw;
-                            if ($id_stock !== null && $id_stock <= 0)
-                                $id_stock = null;
-                            if ($id_asociado !== null && $id_asociado <= 0)
-                                $id_asociado = null;
-                            if (!Producto::stock_existe_o_es_nulo($id_stock))
-                                $error = "El stock principal seleccionado no existe.";
+                            if ($id_stock <= 0)
+                                $error = "Tenés que seleccionar un stock principal.";
                             else {
-                                if (!Producto::stock_existe_o_es_nulo($id_asociado))
-                                    $error = "El stock asociado seleccionado no existe.";
+                                if (!Producto::stock_existe($id_stock))
+                                    $error = "El stock principal seleccionado no existe.";
                                 else {
                                     $precio_costo = 0.0;
                                     $costo_stock = Producto::obtener_precio_costo_stock($id_stock);
                                     if ($costo_stock !== null)
                                         $precio_costo = $costo_stock;
-                                    else {
-                                        $costo_asoc = Producto::obtener_precio_costo_stock($id_asociado);
-                                        if ($costo_asoc !== null)
-                                            $precio_costo = $costo_asoc;
-                                    }
                                     if ($factor_conversion < 0)
                                         $factor_conversion = 0;
                                     if ($ganancia < 0)
                                         $ganancia = 0;
                                     $precio_final = Producto::calcular_precio_final($precio_costo, $factor_conversion, $ganancia);
-                                    $ok = Producto::crear($nombre, $cod_barras, $id_stock, $id_asociado, $factor_conversion, $ganancia, $precio_final, $activo);
+                                    $ok = Producto::crear($nombre, $cod_barras, $id_stock, $factor_conversion, $ganancia, $precio_final, $activo);
                                     if ($ok) {
                                         flash_ok("Producto creado correctamente.");
                                         redirigir("index.php?c=productos&a=index");
@@ -118,6 +111,7 @@ class ControladorProductos {
                                         $error = "No se pudo crear el producto (ver logs).";
                                 }
                             }
+
                         }
                     }
                 }
@@ -125,7 +119,15 @@ class ControladorProductos {
                 $error = "Acceso inválido.";
             if ($error !== "") {
                 flash_error($error);
-                redirigir("index.php?c=productos&a=nuevo");
+                $modo = "crear";
+                $id_stock_pre = ($id_stock !== null ? (int)$id_stock : 0);
+                $p = ["id" => 0, "nombre" => $nombre, "cod_barras" => $cod_barras, "id_stock" => ($id_stock_pre > 0 ? $id_stock_pre : null),
+                    "id_asociado" => null, "factor_conversion" => $factor_conversion, "ganancia" => $ganancia,
+                    "precio_final" => 0, "activo" => $activo];
+                $stocks = $this->listar_stock_para_select();
+                include __DIR__ . "/../vistas/parciales/encabezado.php";
+                include __DIR__ . "/../vistas/productos/formulario.php";
+                include __DIR__ . "/../vistas/parciales/pie.php";
             }
         }
     }
@@ -163,7 +165,6 @@ class ControladorProductos {
                         $nombre = trim((string)obtener_post("nombre", ""));
                         $cod_barras = trim((string)obtener_post("cod_barras", ""));
                         $id_stock_raw = trim((string)obtener_post("id_stock", ""));
-                        $id_asociado_raw = trim((string)obtener_post("id_asociado", ""));
                         $factor_conversion = (float)obtener_post("factor_conversion", 1);
                         $ganancia = (float)obtener_post("ganancia", 0);
                         $activo = (int)obtener_post("activo", 1);
@@ -173,37 +174,29 @@ class ControladorProductos {
                             if (Producto::cod_barras_existe($cod_barras, $id))
                                 $error = "Ya existe otro producto con ese código de barras.";
                             else {
-                                $id_stock = null;
-                                $id_asociado = null;
+                                $id_stock = 0;
                                 if ($id_stock_raw !== "" && ctype_digit($id_stock_raw))
                                     $id_stock = (int)$id_stock_raw;
-                                if ($id_asociado_raw !== "" && ctype_digit($id_asociado_raw))
-                                    $id_asociado = (int)$id_asociado_raw;
-                                if ($id_stock !== null && $id_stock <= 0)
-                                    $id_stock = null;
-                                if ($id_asociado !== null && $id_asociado <= 0)
-                                    $id_asociado = null;
-                                if (!Producto::stock_existe_o_es_nulo($id_stock))
-                                    $error = "El stock principal seleccionado no existe.";
+                                if ($id_stock <= 0)
+                                    $error = "Tenés que seleccionar un stock principal.";
                                 else {
-                                    if (!Producto::stock_existe_o_es_nulo($id_asociado))
-                                        $error = "El stock asociado seleccionado no existe.";
+                                    if (!Producto::stock_existe($id_stock))
+                                        $error = "El stock principal seleccionado no existe.";
                                     else {
                                         $precio_costo = 0.0;
                                         $costo_stock = Producto::obtener_precio_costo_stock($id_stock);
                                         if ($costo_stock !== null)
                                             $precio_costo = $costo_stock;
-                                        else {
-                                            $costo_asoc = Producto::obtener_precio_costo_stock($id_asociado);
-                                            if ($costo_asoc !== null)
-                                                $precio_costo = $costo_asoc;
-                                        }
+
                                         if ($factor_conversion < 0)
                                             $factor_conversion = 0;
                                         if ($ganancia < 0)
                                             $ganancia = 0;
+
                                         $precio_final = Producto::calcular_precio_final($precio_costo, $factor_conversion, $ganancia);
-                                        $ok = Producto::actualizar($id, $nombre, $cod_barras, $id_stock, $id_asociado, $factor_conversion, $ganancia, $precio_final, $activo);
+
+                                        $ok = Producto::actualizar($id, $nombre, $cod_barras, $id_stock, $factor_conversion, $ganancia, $precio_final, $activo);
+
                                         if ($ok) {
                                             flash_ok("Producto actualizado correctamente.");
                                             redirigir("index.php?c=productos&a=index");

@@ -79,9 +79,9 @@ class Stock{
         $pdo = obtener_pdo();
         if ($pdo !== null) {
             try {
-                $sql = "SELECT id FROM productos WHERE id_stock = ? OR id_asociado = ? LIMIT 1";
+                $sql = "SELECT id FROM productos WHERE id_stock = ? LIMIT 1";
                 $st = $pdo->prepare($sql);
-                $st->execute([$id_stock, $id_stock]);
+                $st->execute([$id_stock]);
                 $r = $st->fetch();
                 if ($r)
                     $rel = true;
@@ -119,9 +119,9 @@ class Stock{
                 $s = $st1->fetch();
                 if ($s) {
                     $precio_costo = (float)$s["precio_costo"];
-                    $sqlUpd = "UPDATE productos SET precio_final = ( ? * factor_conversion ) * (1 + (ganancia/100)) WHERE id_stock = ? OR id_asociado = ?";
+                    $sqlUpd = "UPDATE productos SET precio_final = ( ? * factor_conversion ) * (1 + (ganancia/100)) WHERE id_stock = ?";
                     $st2 = $pdo->prepare($sqlUpd);
-                    $ok = $st2->execute([$precio_costo, $id_stock, $id_stock]);
+                    $ok = $st2->execute([$precio_costo, $id_stock]);
                 } else 
                     $ok = false;
             } catch (Throwable $e) {
