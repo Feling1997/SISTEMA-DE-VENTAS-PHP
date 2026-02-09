@@ -35,10 +35,33 @@ $activo=(int)($u["activo"]??1);
         <input class="form-control" name="usuario" value="<?= htmlspecialchars($usuario) ?>" placeholder="Ingresar usuario">
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Contraseña <?= $es_editar ? "(solo si querés cambiarla)" : "" ?></label>
-        <input type="password" class="form-control" name="clave" placeholder="<?= $es_editar ? "Dejar vacío para mantener" : "Ingresar contraseña" ?>">
-      </div>
+      <?php if (!$es_editar): ?>
+        <div class="mb-3">
+          <label class="form-label">Contraseña</label>
+          <div class="input-group">
+            <input type="password" class="form-control" name="clave" id="clave" placeholder="Ingresar contraseña">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleClave('clave')">👁</button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Repetir contraseña</label>
+          <div class="input-group">
+            <input type="password" class="form-control" name="clave2" id="clave2" placeholder="Repetir contraseña">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleClave('clave2')">👁</button>
+          </div>
+          <div class="form-text">Las dos contraseñas deben coincidir.</div>
+        </div>
+      <?php else: ?>
+        <div class="mb-3">
+          <label class="form-label">Contraseña (solo si querés cambiarla)</label>
+          <div class="input-group">
+            <input type="password" class="form-control" name="clave" id="clave_edit" placeholder="Dejar vacío para mantener">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleClave('clave_edit')">👁</button>
+          </div>
+        </div>
+      <?php endif; ?>
+
 
       <div class="mb-3">
         <label class="form-label">Rol</label>
@@ -60,3 +83,10 @@ $activo=(int)($u["activo"]??1);
     </form>
   </div>
 </div>
+<script>
+function toggleClave(id) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  inp.type = (inp.type === "password") ? "text" : "password";
+}
+</script>

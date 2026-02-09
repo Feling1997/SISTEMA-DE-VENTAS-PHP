@@ -124,6 +124,8 @@ class ControladorVentas {
                     else {
                         if ($descuento < 0)
                             $descuento = 0;
+                        if ($descuento > 100)
+                            $descuento = 100;
                         $prod = Venta::obtener_producto_para_venta($id_producto);
                         if ($prod === null || (int)$prod["activo"] !== 1)
                             $error = "Producto no disponible.";
@@ -281,12 +283,16 @@ class ControladorVentas {
             $p = htmlspecialchars((string)$it["producto_nombre"]);
             $cant = htmlspecialchars((string)$it["cantidad"]);
             $pu = htmlspecialchars((string)$it["precio_unit"]);
-            $desc = htmlspecialchars((string)$it["descuento"]);
+            $desc_raw = (float)($it["descuento"] ?? 0);
+            $desc_fmt = (abs($desc_raw - round($desc_raw)) < 0.00001)
+                ? (string)((int)round($desc_raw))
+                : rtrim(rtrim(number_format($desc_raw, 2, ".", ""), "0"), ".");
+            $desc = htmlspecialchars($desc_fmt);
             $sub = htmlspecialchars((string)$it["subtotal"]);
             $filas .= "<tr>
                         <td>$p</td><td style='text-align:right;'>$cant</td>
                         <td style='text-align:right;'>$pu</td>
-                        <td style='text-align:right;'>$desc</td>
+                        <td style='text-align:right;'>$desc%</td>
                         <td style='text-align:right;'>$sub</td>
                        </tr>";
         }

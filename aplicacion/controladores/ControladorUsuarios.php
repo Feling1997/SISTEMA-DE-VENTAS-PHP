@@ -7,7 +7,7 @@ require_once __DIR__ . "/../../configuraciones/csrf.php";
 class ControladorUsuarios{
     private function permiso_admin():bool{
         $ok=false;
-        if(!require_login()()){
+        if(!require_login()){
             flash_error("Tenes que iniciar sesión");
             redirigir("index.php?c=auth&a=login");
         }else{
@@ -21,7 +21,7 @@ class ControladorUsuarios{
     }
 
     public function index():void{
-        if(!$this->permiso_admin()){
+        if($this->permiso_admin()){
             $usuarios=Usuario::listar_todos();
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/usuarios/index.php";
@@ -49,33 +49,41 @@ class ControladorUsuarios{
                 else{
                     $usuario = trim((string)obtener_post("usuario", ""));
                     $clave = (string)obtener_post("clave", "");
+                    $clave2 = (string)obtener_post("clave2", "");
                     $rol = (string)obtener_post("rol", "VENDEDOR");
                     $activo = (int)obtener_post("activo", 1);
-                    if(texto_invalido($usuario)|| texto_invalido($clave))
+                    if (texto_invalido($usuario) || texto_invalido($clave) || texto_invalido($clave2))
                         $error = "No se permite usuario/clave vacíos o placeholders.";
-                    else{
-                        if(!in_array($rol, ["VENDEDOR", "ADMIN"], true))
-                            $error = "Rol no válido.";
-                        else{
-                            if(Usuario::usuario_existe($usuario))
-                                $error = "El usuario ya existe.";
+                    else {
+                        if ($clave !== $clave2)
+                            $error = "Las contraseñas no coinciden.";
+                        else {
+                            if(!in_array($rol, ["VENDEDOR", "ADMIN"], true))
+                                $error = "Rol no válido.";
                             else{
-                                $hash=password_hash($clave, PASSWORD_DEFAULT);
-                                $ok=Usuario::crear($usuario, $hash, $rol, $activo);
-                                if($ok){
-                                    flash_ok("Usuario creado correctamente.");
-                                    redirigir("index.php?c=usuarios&a=lista");
-                                }else
-                                    $error = "No se pudo crear el usuario (ver logs).";
+                                if(Usuario::usuario_existe($usuario))
+                                    $error = "El usuario ya existe.";
+                                else{
+                                    $ok=Usuario::crear($usuario, $clave, $rol, $activo);
+                                    if($ok){
+                                        flash_ok("Usuario creado correctamente.");
+                                        redirigir("index.php?c=usuarios&a=index");
+                                    }else
+                                        $error = "No se pudo crear el usuario (ver logs).";
+                                }
                             }
                         }
                     }
                 }
             }else
                 $error="Acceso inválido.";
-            if($error!==""){
+            if ($error !== "") {
                 flash_error($error);
-                redirigir("index.php?c=usuarios&a=nuevo");
+                $modo = "crear";
+                $u = ["id" => 0, "usuario" => $usuario ?? "", "rol" => $rol ?? "VENDEDOR", "activo" => $activo ?? 1];
+                include __DIR__ . "/../vistas/parciales/encabezado.php";
+                include __DIR__ . "/../vistas/usuarios/formulario.php";
+                include __DIR__ . "/../vistas/parciales/pie.php";
             }
         }
     }
@@ -111,7 +119,7 @@ class ControladorUsuarios{
                     $activo = (int)obtener_post("activo", 1);
                     $u_actual=Usuario::buscar_por_id($id);
                     if($u_actual===null)
-                        $errpr="Usuario no encontrado.";
+                        $error="Usuario no encontrado.";
                     else{
                         if(texto_invalido($usuario))
                             $error = "Usuario inválido (vacíos o placeholders).";
@@ -151,9 +159,13 @@ class ControladorUsuarios{
                 }
             }else
                 $error="Acceso inválido.";
-            if($error!==""){
+            if ($error !== "") {
                 flash_error($error);
-                redirigir("index.php?c=usuarios&a=index");
+                $modo = "editar";
+                $u = ["id" => $id ?? 0, "usuario" => $usuario ?? "", "rol" => $rol ?? "VENDEDOR", "activo" => $activo ?? 1];
+                include __DIR__ . "/../vistas/parciales/encabezado.php";
+                include __DIR__ . "/../vistas/usuarios/formulario.php";
+                include __DIR__ . "/../vistas/parciales/pie.php";
             }
         }
     }
@@ -187,4 +199,4 @@ class ControladorUsuarios{
             }
         }
     }
-}//quedamos acáx
+}

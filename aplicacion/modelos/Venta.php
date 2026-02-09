@@ -108,7 +108,10 @@ class Venta {
         if ($cantidad < 0) { $cantidad = 0; }
         if ($precio_unit < 0) { $precio_unit = 0; }
         if ($descuento < 0) { $descuento = 0; }
-        $sub = ($cantidad * $precio_unit) - $descuento;
+        if ($descuento > 100) { $descuento = 100; }
+        $bruto = ($cantidad * $precio_unit);
+        $monto_desc = ($bruto * $descuento) / 100;
+        $sub = $bruto - $monto_desc;
         if ($sub < 0) { $sub = 0; }
         return $sub;
     }
