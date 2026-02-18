@@ -8,7 +8,6 @@ class ControladorAuth{
     public function login():void{
         iniciar_sesion();
         $error="";
-        
         if($_SERVER["REQUEST_METHOD"]==="POST"){
             $csrf=obtener_post("csrf","");
             if(!csrf_valido($csrf))

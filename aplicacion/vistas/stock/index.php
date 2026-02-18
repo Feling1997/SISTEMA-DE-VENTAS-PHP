@@ -27,7 +27,7 @@ if (isset($productos) && is_array($productos) && isset($s) && is_array($s))
   <div class="card">
     <div class="card-body">
       <div class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table id="tablaStock" class="table table-striped align-middle">
           <thead>
             <tr>
               <th>ID</th>
@@ -74,7 +74,7 @@ if (isset($productos) && is_array($productos) && isset($s) && is_array($s))
   <div class="card">
     <div class="card-body">
       <div class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table id="tablaStockProductos" class="table table-striped align-middle">
           <thead>
             <tr>
               <th>ID</th>
@@ -98,23 +98,23 @@ if (isset($productos) && is_array($productos) && isset($s) && is_array($s))
               <td><?= ((int)($fila["activo"] ?? 0) === 1) ? "Sí" : "No" ?></td>
               <td><?= htmlspecialchars($fila["creado_en"] ?? "") ?></td>
               <td>
-                <div class="d-flex flex-wrap gap-1">
-                  <a class="btn btn-sm btn-secondary"
-                     href="index.php?c=stock&a=editar&id=<?= (int)$fila["id"] ?>">
-                     Editar
+                <div class="acciones-grid">
+                  <a class="btn btn-sm btn-secondary accion-btn"
+                    href="index.php?c=stock&a=editar&id=<?= (int)$fila["id"] ?>">
+                    Editar
                   </a>
-                  <a class="btn btn-sm btn-outline-primary"
-                     href="index.php?c=stock&a=productos&id=<?= (int)$fila["id"] ?>">
-                     Ver productos
+                  <a class="btn btn-sm btn-outline-success accion-btn"
+                    href="index.php?c=productos&a=nuevo&id_stock=<?= (int)$fila["id"] ?>&nombre_stock=<?= urlencode((string)($fila["nombre"] ?? "")) ?>">
+                    Crear
                   </a>
-                  <a class="btn btn-sm btn-outline-success"
-                     href="index.php?c=productos&a=nuevo&id_stock=<?= (int)$fila["id"] ?>&nombre_stock=<?= urlencode((string)($fila["nombre"] ?? "")) ?>">
-                     Crear producto
+                  <a class="btn btn-sm btn-outline-primary accion-btn"
+                    href="index.php?c=stock&a=productos&id=<?= (int)$fila["id"] ?>">
+                    Productos
                   </a>
-                  <a class="btn btn-sm btn-danger"
-                     href="index.php?c=stock&a=eliminar&id=<?= (int)$fila["id"] ?>"
-                     onclick="return confirm('¿Eliminar stock?');">
-                     Eliminar
+                  <a class="btn btn-sm btn-danger accion-btn"
+                    href="index.php?c=stock&a=eliminar&id=<?= (int)$fila["id"] ?>"
+                    onclick="return confirm('¿Eliminar stock?');">
+                    Eliminar
                   </a>
                 </div>
               </td>
@@ -129,3 +129,25 @@ if (isset($productos) && is_array($productos) && isset($s) && is_array($s))
     </div>
   </div>
 <?php endif; ?>
+<script>
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    let ok = true;
+    const tabla = document.getElementById('tablaStockProductos');
+    if (!tabla) ok = false;
+    if (ok) {
+      new DataTable('#tablaStockProductos', {
+        language: {
+          search: "Buscar:",
+          lengthMenu: "Mostrar _MENU_",
+          info: "Mostrando _START_ a _END_ de _TOTAL_",
+          infoEmpty: "Sin datos",
+          zeroRecords: "No se encontraron resultados",
+          paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" }
+        }
+      });
+    }
+  });
+})();
+</script>
+

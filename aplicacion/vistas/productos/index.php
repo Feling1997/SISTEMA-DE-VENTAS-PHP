@@ -7,7 +7,7 @@
 <div class="card">
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-striped align-middle">
+      <table id="tablaProductos" class="table table-striped align-middle">
         <thead>
           <tr>
             <th>ID</th>
@@ -50,3 +50,24 @@
     </div>
   </div>
 </div>
+<script>
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    let ok = true;
+    const tabla = document.getElementById('tablaProductos');
+    if (!tabla) ok = false;
+    if (ok) {
+      new DataTable('#tablaProductos', {
+        language: {
+          search: "Buscar:",
+          lengthMenu: "Mostrar _MENU_",
+          info: "Mostrando _START_ a _END_ de _TOTAL_",
+          infoEmpty: "Sin datos",
+          zeroRecords: "No se encontraron resultados",
+          paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" }
+        }
+      });
+    }
+  });
+})();
+</script>

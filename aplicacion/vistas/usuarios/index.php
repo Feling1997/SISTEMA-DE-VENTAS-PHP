@@ -4,11 +4,10 @@
   <h3 class="mb-0">Usuarios</h3>
   <a class="btn btn-primary" href="index.php?c=usuarios&a=nuevo">+ Nuevo</a>
 </div>
-
 <div class="card">
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-striped align-middle">
+      <table id="tablaUsuarios" class="table table-striped align-middle">
         <thead>
           <tr>
             <th>ID</th>
@@ -37,7 +36,6 @@
             </td>
           </tr>
         <?php endforeach; ?>
-
         <?php if (count($usuarios) === 0): ?>
           <tr><td colspan="6" class="text-center text-muted">Sin usuarios.</td></tr>
         <?php endif; ?>
@@ -46,3 +44,24 @@
     </div>
   </div>
 </div>
+<script>
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    let ok = true;
+    const tabla = document.getElementById('tablaUsuarios');
+    if (!tabla) ok = false;
+    if (ok) {
+      new DataTable('#tablaUsuarios', {
+        language: {
+          search: "Buscar:",
+          lengthMenu: "Mostrar _MENU_",
+          info: "Mostrando _START_ a _END_ de _TOTAL_",
+          infoEmpty: "Sin datos",
+          zeroRecords: "No se encontraron resultados",
+          paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" }
+        }
+      });
+    }
+  });
+})();
+</script>

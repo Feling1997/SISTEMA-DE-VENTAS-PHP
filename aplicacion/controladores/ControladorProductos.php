@@ -79,15 +79,15 @@ class ControladorProductos {
                     $factor_conversion = (float)obtener_post("factor_conversion", 1);
                     $ganancia = (float)obtener_post("ganancia", 0);
                     $activo = (int)obtener_post("activo", 1);
+                    $id_stock = 0;
+                    if ($id_stock_raw !== "" && ctype_digit($id_stock_raw))
+                        $id_stock = (int)$id_stock_raw;
                     if (texto_invalido($nombre) || texto_invalido($cod_barras))
                         $error = "Nombre o código de barras inválidos (vacío o placeholder).";
                     else {
                         if (Producto::cod_barras_existe($cod_barras, 0))
                             $error = "El código de barras ya existe.";
                         else {
-                            $id_stock = 0;
-                            if ($id_stock_raw !== "" && ctype_digit($id_stock_raw))
-                                $id_stock = (int)$id_stock_raw;
                             if ($id_stock <= 0)
                                 $error = "Tenés que seleccionar un stock principal.";
                             else {

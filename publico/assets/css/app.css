@@ -1,0 +1,12 @@
+.acciones-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  justify-items: center;
+}
+
+.accion-btn {
+  width: 100%;
+  min-width: 90px;
+  text-align: center;
+}
