@@ -14,13 +14,16 @@ function texto_invalido($texto):bool{
     $invalido=false;
     $t="";
     if(is_string($texto))
+        //eliminamos espacios en blanco
         $t=trim($texto);
     if($t==="")
         $invalido=true;
     else{
+        //pasamos a minúsculas
         $lower=mb_strtolower($t);
         $placeholder=["ingresar", "ingrese", "buscar", "seleccioná", "seleccione", "—"];
         foreach($placeholder as $p){
+            //si empieza con alguno de los placeholder entonces es inválido
             if(str_starts_with($lower,$p))
                 $invalido=true;
         }

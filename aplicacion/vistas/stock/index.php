@@ -1,4 +1,4 @@
-<?php
+<?php //documentacion tecnica de todo el 
 $viendo_productos = false;
 if (isset($productos) && is_array($productos) && isset($s) && is_array($s))
     $viendo_productos = true;
@@ -150,4 +150,3 @@ if (isset($productos) && is_array($productos) && isset($s) && is_array($s))
   });
 })();
 </script>
-

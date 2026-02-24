@@ -10,6 +10,7 @@ class ControladorAuth{
         $error="";
         if($_SERVER["REQUEST_METHOD"]==="POST"){
             $csrf=obtener_post("csrf","");
+            //falsificaciones de petición desde otro sitio o token
             if(!csrf_valido($csrf))
                 $error="Token invalido. Recarga la página.";
             else{

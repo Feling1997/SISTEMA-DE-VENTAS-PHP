@@ -250,17 +250,17 @@ class ControladorVentas {
                     $venta = $st->fetch();
                     if ($venta) {
                         $items = Venta::obtener_detalle($id_venta);
-                        $html = $this->html_comprobante($venta, $items);
-                        $dompdf = new \Dompdf\Dompdf();
-                        $dompdf->loadHtml($html, "UTF-8");
-                        $dompdf->setPaper("A4", "portrait");
-                        $dompdf->render();
+                        $html = $this->html_comprobante($venta, $items);//genera un html como si fuera una página web
+                        $dompdf = new \Dompdf\Dompdf();//crea el generador de pdf
+                        $dompdf->loadHtml($html, "UTF-8");//paso el html a generar el pdf
+                        $dompdf->setPaper("A4", "portrait");//tamaño de la hoja
+                        $dompdf->render(); //convierte a pdf interno, en memoria
                         $carpeta = $base . "almacenamiento/pdf";
                         if (!is_dir($carpeta))
                             @mkdir($carpeta, 0777, true);
                         $archivo = $carpeta . "/venta_" . $id_venta . ".pdf";
-                        $bytes = $dompdf->output();
-                        $ok = (bool)@file_put_contents($archivo, $bytes);
+                        $bytes = $dompdf->output(); //obtiene el contenido del pdf en binario
+                        $ok = (bool)@file_put_contents($archivo, $bytes); //guarda en la dirección indicada
                     }
                 }
             } else

@@ -162,9 +162,9 @@
     if (!selCli)
       habilitado = false;
     if (habilitado) {
-      const texto = (inputCli ? inputCli.value : '').toLowerCase().trim();
+      const texto = (inputCli ? inputCli.value : '').toLowerCase().trim();//obtiene el texto del input
       if (texto === '')
-        selCli.innerHTML = cliOptionsHTML;
+        selCli.innerHTML = cliOptionsHTML;//si el texto es vacío, muestra todos los clientes
       else {
         const temp = document.createElement('select');
         temp.innerHTML = cliOptionsHTML;
@@ -174,7 +174,7 @@
           let mostrar = false;
           if (op.value === '1')
             mostrar = true;
-          else if ((op.textContent || '').toLowerCase().includes(texto))
+          else if ((op.textContent || '').toLowerCase().includes(texto))//si el texto coincide, lo muestra
             mostrar = true;
           if (mostrar)
             selCli.appendChild(op);
@@ -203,7 +203,7 @@
       opciones.forEach(op => {
         if (!encontrado && op.value) {
           const cb = (op.getAttribute('data-cb') || '').trim();
-          if (cb === valor) {
+          if (cb === valor) {//si coincide, selecciona el producto
             selProd.innerHTML = prodOptionsHTML;
             selProd.value = op.value;
             encontrado = true;

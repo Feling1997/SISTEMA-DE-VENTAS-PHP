@@ -1,5 +1,5 @@
 <?php
-
+//Falsificación de petición desde otro sitio
 require_once __DIR__ .("/seguridad.php");
 
 function csrf_token():string{
