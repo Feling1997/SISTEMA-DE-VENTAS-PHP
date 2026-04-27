@@ -20,14 +20,55 @@ if (isset($_SESSION["usuario_logueado"])) {
     <div class="collapse navbar-collapse" id="nav">
       <ul class="navbar-nav me-auto">
         <?php if ($logueado): ?>
-          <li class="nav-item"><a class="nav-link" href="index.php?c=ventas&a=lista">Lista de ventas</a></li>
-          <li class="nav-item"><a class="nav-link" href="index.php?c=ventas&a=nueva">Nueva venta</a></li>
-          <li class="nav-item"><a class="nav-link" href="index.php?c=clientes&a=index">Clientes</a></li>
-          <li class="nav-item"><a class="nav-link" href="index.php?c=stock&a=index">Stock</a></li>
-          <li class="nav-item"><a class="nav-link" href="index.php?c=productos&a=index">Productos</a></li>
+          <li class="nav-item">
+            <a class="nav-link menu-icono" href="index.php?c=ventas&a=lista">
+              <i class="bi bi-receipt-fill icono-ventas"></i>
+              <span>Ventas</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link menu-icono" href="index.php?c=ventas&a=nueva">
+              <i class="bi bi-cart-plus-fill icono-nueva"></i>
+              <span>Nueva venta</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link menu-icono" href="index.php?c=clientes&a=index">
+              <i class="bi bi-people-fill icono-clientes"></i>
+              <span>Clientes</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link menu-icono" href="index.php?c=stock&a=index">
+              <i class="bi bi-box-seam-fill icono-stock"></i>
+              <span>Stock</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link menu-icono" href="index.php?c=productos&a=index">
+              <i class="bi bi-bag-fill icono-productos"></i>
+              <span>Productos</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link menu-icono" href="index.php?c=reparaciones&a=index">
+              <i class="bi bi-tools icono-reparaciones"></i>
+              <span>Reparaciones</span>
+            </a>
+          </li>
 
           <?php if ($rol === "ADMIN"): ?>
-            <li class="nav-item"><a class="nav-link" href="index.php?c=usuarios&a=index">Usuarios</a></li>
+          <li class="nav-item">
+            <a class="nav-link menu-icono" href="index.php?c=usuarios&a=index">
+              <i class="bi bi-person-gear icono-usuarios"></i>
+              <span>Usuarios</span>
+            </a>
+          </li>
           <?php endif; ?>
         <?php endif; ?>
       </ul>
