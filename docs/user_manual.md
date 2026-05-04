@@ -1,5 +1,7 @@
 # Manual de Usuario
 
+> Nota: la ficha tecnica operativa actualizada esta en `docs/ficha_tecnica.md`. Cada modificacion funcional nueva debe documentarse ahi.
+
 ## Introducción
 
 El Sistema de Ventas es una aplicación web para gestionar ventas, inventario y clientes de manera eficiente.

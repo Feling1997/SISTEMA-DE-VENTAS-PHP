@@ -31,7 +31,7 @@ class ControladorAuth{
                                 "usuario"=>$u["usuario"],
                                 "rol"=>$u["rol"]
                             ];
-                            header("Location:index.php?c=ventas&a=lista");
+                            header("Location:index.php?c=ventas&a=inicio");
                         }
                     }
                 }

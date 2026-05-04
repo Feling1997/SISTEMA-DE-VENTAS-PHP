@@ -14,6 +14,7 @@ $mapa=[
   "productos" => ["archivo" => __DIR__ . "/../aplicacion/controladores/ControladorProductos.php", "clase" => "ControladorProductos"],
   "ventas" => ["archivo" => __DIR__ . "/../aplicacion/controladores/ControladorVentas.php", "clase" => "ControladorVentas"],
   "reparaciones" => ["archivo" => __DIR__ . "/../aplicacion/controladores/ControladorReparaciones.php", "clase" => "ControladorReparaciones"],
+  "configuraciones" => ["archivo" => __DIR__ . "/../aplicacion/controladores/ControladorConfiguraciones.php", "clase" => "ControladorConfiguraciones"],
 ];
 $archivo="";
 $clase="";

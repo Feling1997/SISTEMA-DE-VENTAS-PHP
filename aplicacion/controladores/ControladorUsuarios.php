@@ -23,6 +23,17 @@ class ControladorUsuarios{
     public function index():void{
         if($this->permiso_admin()){
             $usuarios=Usuario::listar_todos();
+            $texto_buscar = trim((string)obtener_get("buscar", ""));
+            $campo_buscar = trim((string)obtener_get("campo", "todos"));
+            $metodo_buscar = trim((string)obtener_get("metodo", "contiene"));
+            $campos_busqueda = [
+                "id" => "ID",
+                "usuario" => "Usuario",
+                "rol" => "Rol",
+                "activo" => "Activo",
+                "creado_en" => "Fecha"
+            ];
+            $usuarios = filtrar_registros_busqueda($usuarios, $texto_buscar, $campo_buscar, $campos_busqueda, $metodo_buscar);
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/usuarios/index.php";
             include __DIR__ . "/../vistas/parciales/pie.php";

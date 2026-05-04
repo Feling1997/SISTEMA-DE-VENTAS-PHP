@@ -24,6 +24,21 @@ class ControladorClientes {
     public function index(): void {
         if ($this->permiso()) {
             $clientes = Cliente::listar_todos();
+            $texto_buscar = trim((string)obtener_get("buscar", ""));
+            $campo_buscar = trim((string)obtener_get("campo", "todos"));
+            $metodo_buscar = trim((string)obtener_get("metodo", "contiene"));
+            $campos_busqueda = [
+                "id" => "ID",
+                "nombre" => "Nombre",
+                "dni" => "Documento",
+                "tipo_documento" => "Tipo doc.",
+                "condicion_iva" => "IVA",
+                "email" => "Email",
+                "telefono" => "Teléfono",
+                "direccion" => "Dirección",
+                "creado_en" => "Fecha"
+            ];
+            $clientes = filtrar_registros_busqueda($clientes, $texto_buscar, $campo_buscar, $campos_busqueda, $metodo_buscar);
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/clientes/index.php";
             include __DIR__ . "/../vistas/parciales/pie.php";
@@ -33,7 +48,7 @@ class ControladorClientes {
     public function nuevo(): void {
         if ($this->permiso()) {
             $modo = "crear";
-            $c = ["id" => 0, "nombre" => "", "dni" => "", "telefono" => "", "direccion" => ""];
+            $c = ["id" => 0, "nombre" => "", "dni" => "", "tipo_documento" => "DNI", "condicion_iva" => "Consumidor Final", "email" => "", "telefono" => "", "direccion" => ""];
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/clientes/formulario.php";
             include __DIR__ . "/../vistas/parciales/pie.php";
@@ -50,6 +65,9 @@ class ControladorClientes {
                 else {
                     $nombre = trim((string)obtener_post("nombre", ""));
                     $dni = trim((string)obtener_post("dni", ""));
+                    $tipo_documento = trim((string)obtener_post("tipo_documento", "DNI"));
+                    $condicion_iva = trim((string)obtener_post("condicion_iva", "Consumidor Final"));
+                    $email = trim((string)obtener_post("email", ""));
                     $telefono = trim((string)obtener_post("telefono", ""));
                     $direccion = trim((string)obtener_post("direccion", ""));
                     if (texto_invalido($nombre)) 
@@ -58,6 +76,7 @@ class ControladorClientes {
                         $dni_db = null;
                         $tel_db = null;
                         $dir_db = null;
+                        $email_db = null;
 
                         if (!texto_invalido($dni) && $dni !== "")
                             $dni_db = $dni;
@@ -65,10 +84,12 @@ class ControladorClientes {
                             $tel_db = $telefono;                        
                         if (!texto_invalido($direccion) && $direccion !== "")
                             $dir_db = $direccion;
+                        if (!texto_invalido($email) && $email !== "")
+                            $email_db = $email;
                         if ($dni_db !== null && Cliente::dni_existe($dni_db, 0))
-                            $error = "El DNI ya existe.";
+                            $error = "El documento ya existe.";
                         else {
-                            $ok = Cliente::crear($nombre, $dni_db, $tel_db, $dir_db);
+                            $ok = Cliente::crear($nombre, $dni_db, $tel_db, $dir_db, $tipo_documento, $condicion_iva, $email_db);
                             if ($ok) {
                                 flash_ok("Cliente creado correctamente.");
                                 redirigir("index.php?c=clientes&a=index");
@@ -128,6 +149,9 @@ class ControladorClientes {
                         } else {
                             $nombre = trim((string)obtener_post("nombre", ""));
                             $dni = trim((string)obtener_post("dni", ""));
+                            $tipo_documento = trim((string)obtener_post("tipo_documento", "DNI"));
+                            $condicion_iva = trim((string)obtener_post("condicion_iva", "Consumidor Final"));
+                            $email = trim((string)obtener_post("email", ""));
                             $telefono = trim((string)obtener_post("telefono", ""));
                             $direccion = trim((string)obtener_post("direccion", ""));
 
@@ -137,6 +161,7 @@ class ControladorClientes {
                                 $dni_db = null;
                                 $tel_db = null;
                                 $dir_db = null;
+                                $email_db = null;
 
                                 if (!texto_invalido($dni) && $dni !== "") {
                                     $dni_db = $dni;
@@ -147,11 +172,14 @@ class ControladorClientes {
                                 if (!texto_invalido($direccion) && $direccion !== "") {
                                     $dir_db = $direccion;
                                 }
+                                if (!texto_invalido($email) && $email !== "") {
+                                    $email_db = $email;
+                                }
 
                                 if ($dni_db !== null && Cliente::dni_existe($dni_db, $id)) {
-                                    $error = "El DNI ya existe.";
+                                    $error = "El documento ya existe.";
                                 } else {
-                                    $ok = Cliente::actualizar($id, $nombre, $dni_db, $tel_db, $dir_db);
+                                    $ok = Cliente::actualizar($id, $nombre, $dni_db, $tel_db, $dir_db, $tipo_documento, $condicion_iva, $email_db);
                                     if ($ok) {
                                         flash_ok("Cliente actualizado correctamente.");
                                         redirigir("index.php?c=clientes&a=index");

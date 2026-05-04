@@ -1,13 +1,52 @@
 <?php
+$texto_buscar = $texto_buscar ?? "";
+$campo_buscar = $campo_buscar ?? "todos";
+$metodo_buscar = $metodo_buscar ?? "contiene";
+$campos_busqueda = $campos_busqueda ?? [];
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h3 class="mb-0">Usuarios</h3>
   <a class="btn btn-primary" href="index.php?c=usuarios&a=nuevo">+ Nuevo</a>
 </div>
-<div class="card">
-  <div class="card-body">
-    <div class="table-responsive">
-      <table id="tablaUsuarios" class="table table-striped align-middle">
+<div class="card search-shell mb-3">
+  <div class="card-body p-3">
+    <form method="GET" action="index.php" class="row g-2 align-items-end" data-auto-submit-search="true" data-search-target="#usuariosResultados">
+      <input type="hidden" name="c" value="usuarios">
+      <input type="hidden" name="a" value="index">
+      <div class="col-lg-5">
+        <label class="form-label">Buscar usuario</label>
+        <input type="text" class="form-control" name="buscar" value="<?= htmlspecialchars($texto_buscar) ?>" placeholder="Ej: usuario, rol o fecha">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Campo</label>
+        <select class="form-select" name="campo">
+          <option value="todos" <?= $campo_buscar === "todos" ? "selected" : "" ?>>Todos</option>
+          <?php foreach ($campos_busqueda as $clave => $etiqueta): ?>
+            <option value="<?= htmlspecialchars($clave) ?>" <?= $campo_buscar === $clave ? "selected" : "" ?>><?= htmlspecialchars($etiqueta) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Método</label>
+        <select class="form-select" name="metodo">
+          <option value="contiene" <?= $metodo_buscar === "contiene" ? "selected" : "" ?>>Contiene</option>
+          <option value="exacto" <?= $metodo_buscar === "exacto" ? "selected" : "" ?>>Exacto</option>
+          <option value="empieza" <?= $metodo_buscar === "empieza" ? "selected" : "" ?>>Empieza</option>
+          <option value="termina" <?= $metodo_buscar === "termina" ? "selected" : "" ?>>Termina</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1">Buscar</button>
+        <a class="btn btn-outline-secondary" href="index.php?c=usuarios&a=index">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+<div id="usuariosResultados">
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table id="tablaUsuarios" class="table table-striped align-middle">
         <thead>
           <tr>
             <th>ID</th>
@@ -40,7 +79,8 @@
           <tr><td colspan="6" class="text-center text-muted">Sin usuarios.</td></tr>
         <?php endif; ?>
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -52,6 +92,7 @@
     if (!tabla) ok = false;
     if (ok) {
       new DataTable('#tablaUsuarios', {
+        searching: false,
         language: {
           search: "Buscar:",
           lengthMenu: "Mostrar _MENU_",

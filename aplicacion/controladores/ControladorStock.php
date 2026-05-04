@@ -25,6 +25,19 @@ class ControladorStock {
     public function index(): void {
         if ($this->permiso()) {
             $items = Stock::listar_todos();
+            $texto_buscar = trim((string)obtener_get("buscar", ""));
+            $campo_buscar = trim((string)obtener_get("campo", "todos"));
+            $metodo_buscar = trim((string)obtener_get("metodo", "contiene"));
+            $campos_busqueda = [
+                "id" => "ID",
+                "nombre" => "Nombre",
+                "unidad" => "Unidad",
+                "cantidad" => "Cantidad",
+                "precio_costo" => "Precio costo",
+                "activo" => "Activo",
+                "creado_en" => "Fecha"
+            ];
+            $items = filtrar_registros_busqueda($items, $texto_buscar, $campo_buscar, $campos_busqueda, $metodo_buscar);
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/stock/index.php";
             include __DIR__ . "/../vistas/parciales/pie.php";
@@ -35,6 +48,9 @@ class ControladorStock {
         if ($this->permiso()) {
             $modo = "crear";
             $s = ["id" => 0, "nombre" => "", "unidad" => "u", "cantidad" => 0, "precio_costo" => 0, "activo" => 1];
+            $datos_form = obtener_form_data("stock_form");
+            if ($datos_form !== [])
+                $s = array_merge($s, $datos_form);
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/stock/formulario.php";
             include __DIR__ . "/../vistas/parciales/pie.php";
@@ -75,6 +91,14 @@ class ControladorStock {
                 $error = "Acceso inválido.";
             if ($error !== "") {
                 flash_error($error);
+                flash_form_data("stock_form", [
+                    "id" => 0,
+                    "nombre" => $nombre ?? "",
+                    "unidad" => $unidad ?? "u",
+                    "cantidad" => $cantidad ?? 0,
+                    "precio_costo" => $precio_costo ?? 0,
+                    "activo" => $activo ?? 1
+                ]);
                 redirigir("index.php?c=stock&a=nuevo");
             }
         }
@@ -89,6 +113,9 @@ class ControladorStock {
                 redirigir("index.php?c=stock&a=index");
             } else {
                 $modo = "editar";
+                $datos_form = obtener_form_data("stock_form");
+                if ($datos_form !== [])
+                    $s = array_merge($s, $datos_form);
                 include __DIR__ . "/../vistas/parciales/encabezado.php";
                 include __DIR__ . "/../vistas/stock/formulario.php";
                 include __DIR__ . "/../vistas/parciales/pie.php";
@@ -145,7 +172,19 @@ class ControladorStock {
                 $error = "Acceso inválido.";
             if ($error !== "") {
                 flash_error($error);
-                redirigir("index.php?c=stock&a=index");
+                flash_form_data("stock_form", [
+                    "id" => $id ?? 0,
+                    "nombre" => $nombre ?? "",
+                    "unidad" => $unidad ?? "u",
+                    "cantidad" => $cantidad ?? 0,
+                    "precio_costo" => $precio_costo ?? 0,
+                    "activo" => $activo ?? 1
+                ]);
+                $id_redirigir = (int)($id ?? 0);
+                if ($id_redirigir > 0)
+                    redirigir("index.php?c=stock&a=editar&id=" . $id_redirigir);
+                else
+                    redirigir("index.php?c=stock&a=index");
             }
         }
     }
@@ -160,6 +199,20 @@ class ControladorStock {
             } else {
                 $items = Stock::listar_todos();
                 $productos = $this->listar_productos_por_stock($id);
+                $texto_buscar = trim((string)obtener_get("buscar", ""));
+                $campo_buscar = trim((string)obtener_get("campo", "todos"));
+                $metodo_buscar = trim((string)obtener_get("metodo", "contiene"));
+                $campos_busqueda = [
+                    "id" => "ID",
+                    "nombre" => "Nombre",
+                    "cod_barras" => "Código de barras",
+                    "factor_conversion" => "Factor",
+                    "ganancia" => "Ganancia",
+                    "precio_final" => "Precio final",
+                    "activo" => "Activo",
+                    "creado_en" => "Fecha"
+                ];
+                $productos = filtrar_registros_busqueda($productos, $texto_buscar, $campo_buscar, $campos_busqueda, $metodo_buscar);
                 include __DIR__ . "/../vistas/parciales/encabezado.php";
                 include __DIR__ . "/../vistas/stock/index.php";
                 include __DIR__ . "/../vistas/parciales/pie.php";

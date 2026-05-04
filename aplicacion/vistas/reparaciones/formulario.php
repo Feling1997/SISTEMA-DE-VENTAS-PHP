@@ -76,6 +76,12 @@ $titulo = $es_edicion ? "Editar Reparación" : "Nueva Reparación";
                  value="<?= htmlspecialchars($p["fecha_ingreso"] ?? date("Y-m-d")) ?>">
         </div>
 
+        <div class="col-md-6">
+          <label for="garantia" class="form-label">Tiempo de garantia</label>
+          <input type="text" class="form-control" id="garantia" name="garantia"
+                 value="<?= htmlspecialchars($p["garantia"] ?? "") ?>" placeholder="ej: 30 dias, 3 meses">
+        </div>
+
         <!-- Fechas y observaciones -->
         <div class="col-md-6">
           <label for="fecha_entrega" class="form-label">Fecha Entrega</label>

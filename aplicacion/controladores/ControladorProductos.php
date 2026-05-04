@@ -6,6 +6,13 @@ require_once __DIR__ . "/../../configuraciones/csrf.php";
 require_once __DIR__ . "/../../configuraciones/base_datos.php";
 
 class ControladorProductos {
+    private function generar_codigo_barras_interno(): string {
+        do {
+            $codigo = "P" . date("YmdHis") . random_int(10, 99);
+        } while (Producto::cod_barras_existe($codigo, 0));
+        return $codigo;
+    }
+
     private function permiso(): bool {
         $ok = false;
         if (!require_login()) {
@@ -42,6 +49,19 @@ class ControladorProductos {
     public function index(): void {
         if ($this->permiso()) {
             $productos = Producto::listar_todos();
+            $texto_buscar = trim((string)obtener_get("buscar", ""));
+            $campo_buscar = trim((string)obtener_get("campo", "todos"));
+            $metodo_buscar = trim((string)obtener_get("metodo", "contiene"));
+            $campos_busqueda = [
+                "id" => "ID",
+                "nombre" => "Nombre",
+                "cod_barras" => "Código de barras",
+                "stock_nombre" => "Stock",
+                "factor_conversion" => "Factor",
+                "ganancia" => "Ganancia",
+                "precio_final" => "Precio final"
+            ];
+            $productos = filtrar_registros_busqueda($productos, $texto_buscar, $campo_buscar, $campos_busqueda, $metodo_buscar);
             include __DIR__ . "/../vistas/parciales/encabezado.php";
             include __DIR__ . "/../vistas/productos/index.php";
             include __DIR__ . "/../vistas/parciales/pie.php";
@@ -76,17 +96,19 @@ class ControladorProductos {
                     $nombre = trim((string)obtener_post("nombre", ""));
                     $cod_barras = trim((string)obtener_post("cod_barras", ""));
                     $id_stock_raw = trim((string)obtener_post("id_stock", ""));
-                    $factor_conversion = (float)obtener_post("factor_conversion", 1);
-                    $ganancia = (float)obtener_post("ganancia", 0);
+                    $factor_conversion = parsear_numero_form(obtener_post("factor_conversion", 1), 1);
+                    $ganancia = parsear_numero_form(obtener_post("ganancia", 0), 0);
                     $activo = (int)obtener_post("activo", 1);
                     $id_stock = 0;
                     if ($id_stock_raw !== "" && ctype_digit($id_stock_raw))
                         $id_stock = (int)$id_stock_raw;
-                    if (texto_invalido($nombre) || texto_invalido($cod_barras))
-                        $error = "Nombre o código de barras inválidos (vacío o placeholder).";
+                    if (texto_invalido($nombre))
+                        $error = "Nombre inválido (vacío o placeholder).";
                     else {
+                        if (texto_invalido($cod_barras))
+                            $cod_barras = $this->generar_codigo_barras_interno();
                         if (Producto::cod_barras_existe($cod_barras, 0))
-                            $error = "El código de barras ya existe.";
+                            $error = "El código del producto ya existe.";
                         else {
                             if ($id_stock <= 0)
                                 $error = "Tenés que seleccionar un stock principal.";
@@ -141,6 +163,9 @@ class ControladorProductos {
                 redirigir("index.php?c=productos&a=index");
             } else {
                 $modo = "editar";
+                $datos_form = obtener_form_data("productos_form");
+                if ($datos_form !== [])
+                    $p = array_merge($p, $datos_form);
                 $stocks = $this->listar_stock_para_select();
                 include __DIR__ . "/../vistas/parciales/encabezado.php";
                 include __DIR__ . "/../vistas/productos/formulario.php";
@@ -165,14 +190,18 @@ class ControladorProductos {
                         $nombre = trim((string)obtener_post("nombre", ""));
                         $cod_barras = trim((string)obtener_post("cod_barras", ""));
                         $id_stock_raw = trim((string)obtener_post("id_stock", ""));
-                        $factor_conversion = (float)obtener_post("factor_conversion", 1);
-                        $ganancia = (float)obtener_post("ganancia", 0);
+                        $factor_conversion = parsear_numero_form(obtener_post("factor_conversion", 1), 1);
+                        $ganancia = parsear_numero_form(obtener_post("ganancia", 0), 0);
                         $activo = (int)obtener_post("activo", 1);
-                        if (texto_invalido($nombre) || texto_invalido($cod_barras))
-                            $error = "Nombre o código de barras inválidos (vacío o placeholder).";
+                        if (texto_invalido($nombre))
+                            $error = "Nombre inválido (vacío o placeholder).";
                         else {
+                            if (texto_invalido($cod_barras))
+                                $cod_barras = trim((string)($p_actual["cod_barras"] ?? ""));
+                            if (texto_invalido($cod_barras))
+                                $cod_barras = $this->generar_codigo_barras_interno();
                             if (Producto::cod_barras_existe($cod_barras, $id))
-                                $error = "Ya existe otro producto con ese código de barras.";
+                                $error = "Ya existe otro producto con ese código.";
                             else {
                                 $id_stock = 0;
                                 if ($id_stock_raw !== "" && ctype_digit($id_stock_raw))
@@ -212,7 +241,21 @@ class ControladorProductos {
                 $error = "Acceso inválido.";
             if ($error !== "") {
                 flash_error($error);
-                redirigir("index.php?c=productos&a=index");
+                flash_form_data("productos_form", [
+                    "id" => $id ?? 0,
+                    "nombre" => $nombre ?? "",
+                    "cod_barras" => $cod_barras ?? "",
+                    "id_stock" => $id_stock ?? 0,
+                    "factor_conversion" => $factor_conversion ?? 1,
+                    "ganancia" => $ganancia ?? 0,
+                    "precio_final" => $precio_final ?? 0,
+                    "activo" => $activo ?? 1
+                ]);
+                $id_redirigir = (int)($id ?? 0);
+                if ($id_redirigir > 0)
+                    redirigir("index.php?c=productos&a=editar&id=" . $id_redirigir);
+                else
+                    redirigir("index.php?c=productos&a=index");
             }
         }
     }

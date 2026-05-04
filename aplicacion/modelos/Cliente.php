@@ -11,7 +11,8 @@ class Cliente {
 
         if ($pdo !== null) {
             try {
-                $sql = "SELECT id, nombre, dni, telefono, direccion, creado_en FROM clientes ORDER BY id DESC";
+                self::asegurar_columnas_fiscales($pdo);
+                $sql = "SELECT id, nombre, dni, tipo_documento, condicion_iva, email, telefono, direccion, creado_en FROM clientes ORDER BY id DESC";
                 $st = $pdo->prepare($sql);
                 $st->execute();
                 $rows = $st->fetchAll();
@@ -31,7 +32,8 @@ class Cliente {
 
         if ($pdo !== null) {
             try {
-                $sql = "SELECT id, nombre, dni, telefono, direccion, creado_en
+                self::asegurar_columnas_fiscales($pdo);
+                $sql = "SELECT id, nombre, dni, tipo_documento, condicion_iva, email, telefono, direccion, creado_en
                         FROM clientes
                         WHERE id = ?
                         LIMIT 1";
@@ -55,6 +57,7 @@ class Cliente {
         $dni_limpio = trim($dni);
         if ($pdo !== null && $dni_limpio !== "") {
             try {
+                self::asegurar_columnas_fiscales($pdo);
                 $sql = "SELECT id FROM clientes WHERE dni = ? AND id <> ? LIMIT 1";
                 $st = $pdo->prepare($sql);
                 $st->execute([$dni_limpio, $excepto_id]);
@@ -68,15 +71,16 @@ class Cliente {
         return $existe;
     }
 
-    public static function crear(string $nombre, ?string $dni, ?string $telefono, ?string $direccion): bool {
+    public static function crear(string $nombre, ?string $dni, ?string $telefono, ?string $direccion, string $tipo_documento = "DNI", string $condicion_iva = "Consumidor Final", ?string $email = null): bool {
         $ok = false;
         $pdo = obtener_pdo();
 
         if ($pdo !== null) {
             try {
-                $sql = "INSERT INTO clientes (nombre, dni, telefono, direccion) VALUES (?, ?, ?, ?)";
+                self::asegurar_columnas_fiscales($pdo);
+                $sql = "INSERT INTO clientes (nombre, dni, telefono, direccion, tipo_documento, condicion_iva, email) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 $st = $pdo->prepare($sql);
-                $ok = $st->execute([$nombre, $dni, $telefono, $direccion]);
+                $ok = $st->execute([$nombre, $dni, $telefono, $direccion, $tipo_documento, $condicion_iva, $email]);
             } catch (Throwable $e) {
                 $ok = false;
                 registrar_log("Cliente::crear", $e->getMessage());
@@ -85,14 +89,15 @@ class Cliente {
         return $ok;
     }
 
-    public static function actualizar(int $id, string $nombre, ?string $dni, ?string $telefono, ?string $direccion): bool {
+    public static function actualizar(int $id, string $nombre, ?string $dni, ?string $telefono, ?string $direccion, string $tipo_documento = "DNI", string $condicion_iva = "Consumidor Final", ?string $email = null): bool {
         $ok = false;
         $pdo = obtener_pdo();
         if ($pdo !== null) {
             try {
-                $sql = "UPDATE clientes SET nombre = ?, dni = ?, telefono = ?, direccion = ? WHERE id = ?";
+                self::asegurar_columnas_fiscales($pdo);
+                $sql = "UPDATE clientes SET nombre = ?, dni = ?, telefono = ?, direccion = ?, tipo_documento = ?, condicion_iva = ?, email = ? WHERE id = ?";
                 $st = $pdo->prepare($sql);
-                $ok = $st->execute([$nombre, $dni, $telefono, $direccion, $id]);
+                $ok = $st->execute([$nombre, $dni, $telefono, $direccion, $tipo_documento, $condicion_iva, $email, $id]);
             } catch (Throwable $e) {
                 $ok = false;
                 registrar_log("Cliente::actualizar", $e->getMessage());
@@ -136,5 +141,32 @@ class Cliente {
             }
         }
         return $ok;
+    }
+
+    public static function validar_datos_factura_a(array $cliente): string {
+        $error = "";
+        $tipo_documento = strtoupper(trim((string)($cliente["tipo_documento"] ?? "")));
+        $documento = preg_replace('/\D+/', '', (string)($cliente["dni"] ?? ""));
+        $condicion_iva = trim((string)($cliente["condicion_iva"] ?? ""));
+        if ($tipo_documento !== "CUIT")
+            $error = "Para Factura A el cliente debe tener tipo de documento CUIT.";
+        else if (strlen($documento) !== 11)
+            $error = "Para Factura A cargá un CUIT válido de 11 dígitos.";
+        else if ($condicion_iva !== "Responsable Inscripto")
+            $error = "Para Factura A el cliente debe ser Responsable Inscripto.";
+        return $error;
+    }
+
+    public static function asegurar_columnas_fiscales(PDO $pdo): void {
+        self::asegurar_columna($pdo, "tipo_documento", "ALTER TABLE clientes ADD COLUMN tipo_documento VARCHAR(20) NOT NULL DEFAULT 'DNI' AFTER dni");
+        self::asegurar_columna($pdo, "condicion_iva", "ALTER TABLE clientes ADD COLUMN condicion_iva VARCHAR(40) NOT NULL DEFAULT 'Consumidor Final' AFTER tipo_documento");
+        self::asegurar_columna($pdo, "email", "ALTER TABLE clientes ADD COLUMN email VARCHAR(120) NULL AFTER condicion_iva");
+    }
+
+    private static function asegurar_columna(PDO $pdo, string $columna, string $sqlAlter): void {
+        $st = $pdo->prepare("SHOW COLUMNS FROM clientes LIKE ?");
+        $st->execute([$columna]);
+        if (!$st->fetch())
+            $pdo->exec($sqlAlter);
     }
 }

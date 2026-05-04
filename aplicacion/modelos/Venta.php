@@ -3,21 +3,115 @@ require_once __DIR__ . "/../../configuraciones/base_datos.php";
 require_once __DIR__ . "/../../configuraciones/ayudas.php";
 class Venta {
     public static function listar_ventas(): array {
+        return self::listar_ventas_periodo("", "");
+    }
+
+    public static function listar_ventas_periodo(string $fecha_desde, string $fecha_hasta): array {
         $lista = [];
         $pdo = obtener_pdo();
         if ($pdo !== null) {
             try {
-                $sql = "SELECT v.id, v.fecha, v.total, c.nombre AS cliente_nombre, u.usuario AS usuario_nombre FROM ventas v INNER JOIN clientes c ON c.id = v.id_cliente INNER JOIN usuarios u ON u.id = v.id_usuario ORDER BY v.id DESC";
+                $sql = "SELECT v.id, v.fecha, v.total, c.nombre AS cliente_nombre, u.usuario AS usuario_nombre
+                        FROM ventas v
+                        INNER JOIN clientes c ON c.id = v.id_cliente
+                        INNER JOIN usuarios u ON u.id = v.id_usuario";
+                $params = [];
+                $where = self::construir_where_periodo($fecha_desde, $fecha_hasta, $params, "v.fecha");
+                if ($where !== "") {
+                    $sql .= " WHERE " . $where;
+                }
+                $sql .= " ORDER BY v.id DESC";
                 $st = $pdo->prepare($sql);
-                $st->execute();
+                $st->execute($params);
                 $rows = $st->fetchAll();
                 if (is_array($rows))
                     $lista = $rows;
             } catch (Throwable $e) {
-                registrar_log("Venta::listar_ventas", $e->getMessage());
+                registrar_log("Venta::listar_ventas_periodo", $e->getMessage());
             }
         }
         return $lista;
+    }
+
+    public static function obtener_resumen_periodo(string $fecha_desde, string $fecha_hasta): array {
+        $resumen = [
+            "cantidad_ventas" => 0,
+            "total_vendido" => 0.0,
+            "ganancia" => 0.0
+        ];
+        $pdo = obtener_pdo();
+        if ($pdo !== null) {
+            try {
+                $params = [];
+                $where = self::construir_where_periodo($fecha_desde, $fecha_hasta, $params, "v.fecha");
+                $sql = "SELECT 
+                            COUNT(DISTINCT v.id) AS cantidad_ventas,
+                            COALESCE(SUM(d.subtotal), 0) AS total_vendido,
+                            COALESCE(SUM(
+                                d.subtotal - (
+                                    CASE
+                                        WHEN COALESCE(p.ganancia, 0) <= -100 THEN 0
+                                        ELSE (d.precio_unit / (1 + (COALESCE(p.ganancia, 0) / 100)))
+                                    END
+                                ) * d.cantidad
+                            ), 0) AS ganancia
+                        FROM ventas v
+                        INNER JOIN detalle_venta d ON d.id_venta = v.id
+                        INNER JOIN productos p ON p.id = d.id_producto";
+                if ($where !== "") {
+                    $sql .= " WHERE " . $where;
+                }
+                $st = $pdo->prepare($sql);
+                $st->execute($params);
+                $fila = $st->fetch();
+                if ($fila) {
+                    $resumen["cantidad_ventas"] = (int)($fila["cantidad_ventas"] ?? 0);
+                    $resumen["total_vendido"] = (float)($fila["total_vendido"] ?? 0);
+                    $resumen["ganancia"] = (float)($fila["ganancia"] ?? 0);
+                }
+            } catch (Throwable $e) {
+                registrar_log("Venta::obtener_resumen_periodo", $e->getMessage());
+            }
+        }
+        return $resumen;
+    }
+
+    public static function obtener_ganancia_por_ids(array $ids_venta): float {
+        $ganancia = 0.0;
+        $ids = [];
+        foreach ($ids_venta as $id_venta) {
+            $id = (int)$id_venta;
+            if ($id > 0)
+                $ids[] = $id;
+        }
+        $ids = array_values(array_unique($ids));
+        if (count($ids) === 0)
+            return 0.0;
+        $pdo = obtener_pdo();
+        if ($pdo !== null) {
+            try {
+                $placeholders = implode(", ", array_fill(0, count($ids), "?"));
+                $sql = "SELECT COALESCE(SUM(
+                            d.subtotal - (
+                                CASE
+                                    WHEN COALESCE(p.ganancia, 0) <= -100 THEN 0
+                                    ELSE (d.precio_unit / (1 + (COALESCE(p.ganancia, 0) / 100)))
+                                END
+                            ) * d.cantidad
+                        ), 0) AS ganancia
+                        FROM detalle_venta d
+                        INNER JOIN productos p ON p.id = d.id_producto
+                        WHERE d.id_venta IN ($placeholders)";
+                $st = $pdo->prepare($sql);
+                $st->execute($ids);
+                $fila = $st->fetch();
+                if ($fila)
+                    $ganancia = (float)($fila["ganancia"] ?? 0);
+            } catch (Throwable $e) {
+                registrar_log("Venta::obtener_ganancia_por_ids", $e->getMessage());
+            }
+        }
+        return $ganancia;
     }
 
     public static function obtener_detalle(int $id_venta): array {
@@ -203,5 +297,20 @@ class Venta {
             }
         }
         return $res;
+    }
+
+    private static function construir_where_periodo(string $fecha_desde, string $fecha_hasta, array &$params, string $campo_fecha): string {
+        $where = [];
+        $desde = trim($fecha_desde);
+        $hasta = trim($fecha_hasta);
+        if ($desde !== "") {
+            $where[] = "$campo_fecha >= ?";
+            $params[] = $desde . " 00:00:00";
+        }
+        if ($hasta !== "") {
+            $where[] = "$campo_fecha <= ?";
+            $params[] = $hasta . " 23:59:59";
+        }
+        return implode(" AND ", $where);
     }
 }

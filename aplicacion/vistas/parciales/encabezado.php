@@ -14,7 +14,8 @@ iniciar_sesion();
   <link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<?php $body_class = trim((string)($body_class ?? "bg-light")); ?>
+<body class="<?= htmlspecialchars($body_class) ?>">
 <?php include __DIR__ . "/menu.php"; ?>
 <div class="container py-5">
 <?php include __DIR__ . "/alertas.php"; ?>

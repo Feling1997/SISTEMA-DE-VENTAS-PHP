@@ -10,17 +10,18 @@
       <table id="tablaReparaciones" class="table table-striped align-middle">
         <thead>
           <tr>
-            <th>Código</th>
+            <th>Codigo</th>
             <th>Cliente</th>
-            <th>Teléfono</th>
+            <th>Telefono</th>
             <th>Marca/Modelo</th>
             <th>IMEI</th>
             <th>Falla</th>
+            <th>Garantia</th>
             <th>Estado</th>
             <th>Precio</th>
             <th>Ingreso</th>
             <th>Entrega</th>
-            <th style="width: 180px;">Acciones</th>
+            <th style="width: 260px;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -29,13 +30,14 @@
             <td><?= htmlspecialchars($r["codigo"] ?? "") ?></td>
             <td><?= htmlspecialchars($r["cliente_nombre"] ?? "") ?></td>
             <td><?= htmlspecialchars($r["cliente_telefono"] ?? "") ?></td>
-            <td><?= htmlspecialchars(($r["marca"] ?? "") . " " . ($r["modelo"] ?? "")) ?></td>
+            <td><?= htmlspecialchars(trim(($r["marca"] ?? "") . " " . ($r["modelo"] ?? ""))) ?></td>
             <td><?= htmlspecialchars($r["imei"] ?? "") ?></td>
             <td><?= htmlspecialchars($r["falla"] ?? "") ?></td>
+            <td><?= htmlspecialchars($r["garantia"] ?? "") ?></td>
             <td>
-              <?php 
+              <?php
                 $estado = $r["estado"] ?? "PENDIENTE";
-                $clase = match($estado) {
+                $clase = match ($estado) {
                     "PENDIENTE" => "bg-warning",
                     "EN_REPARACION" => "bg-info",
                     "ESP_REPUESTOS" => "bg-secondary",
@@ -47,22 +49,23 @@
               ?>
               <span class="badge <?= $clase ?>"><?= $estados[$estado] ?? $estado ?></span>
             </td>
-            <td>$<?= number_format((float)($r["precio"] ?? 0), 2, ",", ".") ?></td>
+            <td><?= htmlspecialchars(moneda_para_mostrar($r["precio"] ?? 0)) ?></td>
             <td><?= htmlspecialchars($r["fecha_ingreso"] ?? "") ?></td>
             <td><?= htmlspecialchars($r["fecha_entrega"] ?? "-") ?></td>
             <td>
               <a class="btn btn-sm btn-secondary" href="index.php?c=reparaciones&a=editar&id=<?= (int)$r["id"] ?>">Editar</a>
-              <a class="btn btn-sm btn-info" href="index.php?c=reparaciones&a=imprimir&id=<?= (int)$r["id"] ?>" target="_blank">Imprimir</a>
+              <a class="btn btn-sm btn-success" href="index.php?c=reparaciones&a=imprimir&id=<?= (int)$r["id"] ?>" target="_blank">Ticket</a>
+              <a class="btn btn-sm btn-info" href="index.php?c=reparaciones&a=imprimir&id=<?= (int)$r["id"] ?>&modo=pdf" target="_blank">PDF</a>
               <a class="btn btn-sm btn-danger"
                  href="index.php?c=reparaciones&a=eliminar&id=<?= (int)$r["id"] ?>"
-                 onclick="return confirm('¿Eliminar reparación?');">
+                 onclick="return confirm('Eliminar reparacion?');">
                  Eliminar
               </a>
             </td>
           </tr>
         <?php endforeach; ?>
         <?php if (count($reparaciones) === 0): ?>
-          <tr><td colspan="11" class="text-center text-muted">Sin reparaciones.</td></tr>
+          <tr><td colspan="12" class="text-center text-muted">Sin reparaciones.</td></tr>
         <?php endif; ?>
         </tbody>
       </table>
