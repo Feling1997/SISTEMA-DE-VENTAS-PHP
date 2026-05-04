@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Sistema de Ventas
 
 ## Descripción
@@ -95,3 +96,5 @@ VENTAS/
 ## Contacto
 
 [Información de contacto]
+# SISTEMA-DE-VENTAS-PHP
+
